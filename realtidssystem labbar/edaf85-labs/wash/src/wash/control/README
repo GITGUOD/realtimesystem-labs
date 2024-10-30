@@ -1,0 +1,66 @@
+Reflections:
+
+### R1. Which threads exist in your solution?
+
+In the solution, the following threads exist:
+
+1. **WashingProgram (WashingProgram1, WashingProgram2, etc.)**: This thread represents the washing program's logic and controls the different stages of the washing process.
+2. **TemperatureController**: Responsible for maintaining the set temperature in the washing machine.
+3. **WaterController**: Manages the filling and draining of water.
+4. **SpinController**: Controls the spinning of the drum.
+5. **Main thread**: The main program that starts and manages these threads.
+
+### R2. How do the threads communicate? Is there any shared data?
+
+The threads communicate using **WashingMessages**, which are sent between the washing program thread and the controllers. Each controller has a **BlockingQueue** where it receives messages from the washing program. The washing program sends commands like "start heating," "fill water," "start spinning," etc., and the controllers respond by sending acknowledgment messages back.
+
+There is no direct shared data between the threads. Instead, they use message-passing to avoid the need for shared state, which helps to prevent race conditions.
+
+### R3. WashingMessages are immutable. What does this mean? Can you think of how it could matter here?
+
+An **immutable object** is an object whose state cannot be modified after it is created. For `WashingMessages`, immutability means that once a message is created with a specific command and data, its content cannot be changed.
+
+The significance of immutability here is:
+- **Thread Safety**: Since `WashingMessages` are immutable, they can be safely shared between threads without worrying about concurrent modifications.
+- **Predictability**: The message contents are consistent, ensuring that the commands received by the controllers remain unchanged.
+
+### R4. For TemperatureController, we selected a period of 10 seconds. What could the downside of a too long or too short period be?
+
+- **Too Long Period**: If the period is too long, the temperature may fluctuate significantly around the target value because adjustments are made infrequently. This could result in longer heating times and less precise temperature control.
+- **Too Short Period**: If the period is too short, it could lead to excessive checking and adjustment, potentially causing the system to overreact to minor changes. This may increase CPU usage and power consumption without significant benefits.
+
+### R5. What period did you select for WaterController? What could the downside of a too long or too short period be?
+
+The period selected for the **WaterController** should be **shorter than 10 seconds**, given that water filling and draining happen relatively quickly. For example, a period of **2-5 seconds** would be more appropriate.
+
+- **Too Long Period**: If the period is too long, water levels may overshoot the desired level due to the delay in detecting when to stop filling. Similarly, draining may take longer than necessary to detect when the machine is empty.
+- **Too Short Period**: If the period is too short, it may cause frequent checks for water levels, which could unnecessarily increase CPU usage and result in overloading the controller with frequent commands.
+
+### R6. Do you use any BlockingQueue in your solution? How?
+
+Yes, the solution uses **BlockingQueue** to facilitate communication between threads. Each controller thread (TemperatureController, WaterController, SpinController) has a `BlockingQueue<WashingMessage>` where it receives commands sent by the washing program thread.
+
+- The **WashingProgram** sends messages to the `BlockingQueue` of the respective controller.
+- The **controller threads** wait for messages on their queue (using `take()`), process them, and may send acknowledgment messages back.
+
+### R7. How did you use Java’s interruption facility (`interrupt()`, `InterruptedException`)?
+
+The **interruption facility** is used to handle cases where the washing program is stopped or interrupted:
+
+- **Handling `InterruptedException`**: The washing program catches `InterruptedException` to detect when it has been interrupted. This allows the program to stop the current washing operation and perform a proper cleanup.
+- **Using `interrupt()`**: The washing program may call `interrupt()` on the controller threads (or on itself) to stop their operations gracefully.
+
+### R8. How do you ensure that the machine never heats unless there is water in it?
+
+To ensure the machine never heats unless there is water:
+- The **WashingProgram** first sends a command to **fill the water** and waits for an **acknowledgment** from the **WaterController** confirming that the water is at the correct level.
+- Only after receiving this acknowledgment does the washing program proceed to send the **temperature set command** to the **TemperatureController**.
+
+### R9. How can you ensure that the heat has indeed been turned off before the washing program continues (and starts the drain pump)?
+
+To ensure that the heat is turned off before draining:
+1. **Send a command** to the **TemperatureController** to set the temperature to idle (`TEMP_IDLE`).
+2. **Wait for an acknowledgment** from the **TemperatureController**, confirming that the heating has been stopped.
+3. Once the acknowledgment is received, the washing program can **safely start the drain pump** by sending the appropriate command to the **WaterController**.
+
+By waiting for acknowledgments, we ensure that actions are completed sequentially and that the machine transitions safely between states.

@@ -1,0 +1,36 @@
+Reflektion för labb 2:
+
+1. What threads are there in your solution, and how do they communicate?
+Answer: Det finns två trådar, Passenger tråden och Hiss tråden. De kommunicerar genom hissen åker fram och tillbaka hela tiden, en hiss efter en hiss. Den stannar endast om det finns en passenger i våningen och den vet det genom monitorn som håller koll på datan. Typ om det finns passengers så väntar den tills alla går ombord. Samma sak som passenger, de går framåt tills de är framme i hissen. Vi behöver endast bry oss om när de kommer till hissen. Och det är där de väntar på att hissen ska komma via monitorn.
+
+2. Why do we always put wait in a while loop? Why wouldn't if work?
+Answer: Om jag minns rätt så funkar if men det finns ingen mening för man vinner nästan ingenting på det. Den största anledningen varför man har en while loop är för att man inte kan garantera att tillståndet är sant när en tråd vaknar upp efter att ha blivit notifierad. Andra trådar kan t.ex ha modifierat samma attribut under den tiden.
+
+3. Mathematician Augustus De Morgan is known for having formulated two laws, which can be expressed in java as:
+!(a && b) == (!a || !b) osv.
+Answer: De kan vara användbara genom att man kan formulera på andra sätt och ibland göra logiska expression lättare att läsa eller mer läsbara typ, kanske även förhindra misstag.
+
+4. Why can’t we call the LiftView method moveLift() in a monitor
+Answer: För att undvika blockerande operationer. Det kan vara så att om man kalla moveLift, som ska ske hela tiden kan det göra systemet oresponsiv, frysa om uppdateringar sker för att den behöver t.ex tillstånd att köra osv.
+
+5.  Suppose a monitor includes a single attribute x. Also suppose the monitor includes the following
+method, waiting for x to change:
+public class Example {
+private int x;
+// ...
+public synchronized int awaitX() throws InterruptedException {
+while (x == 0) {
+wait();
+}
+return x;
+}
+// ... other methods ...
+Some monitor also has other methods. Some methods (like awaitX above) read x, and some modify x.
+How can you decide which method(s) should call notify/notifyAll?
+
+Answer: T.ex identifiera dom metoderna som vill ändra på tillstånderna som de andra trådarna väntar på. T.ex tillståndet från att passageraren går till hissen till att gå på hissen osv.
+
+6.  Why can wait only be called in a synchronized method (or a method called by another synchronized
+method for the same object)?
+Answer: För att synchronized gör att metoderna endast kan köra en åt gången typ.
+Wait() kräver att tråden håller låset på objektet. När wait() tillkallas, släpps detta lås tillfälligt tills trådet väcks igen genom notify, vilket säkerställer att andra trådar kan komma åt och ändra tillståndet på objektet under tiden.
